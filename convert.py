@@ -71,6 +71,19 @@ outstr = '''\
 	unmir
 	unmov
 } def
+
+/txt {
+	mov
+	1 -1 scale
+	newpath
+	/Courier-normal findfont
+	16 scalefont
+	setfont
+	0 0 moveto
+	show
+	1 -1 scale
+	unmov
+} def
 '''
 
 def load_sym(s):
@@ -220,6 +233,18 @@ def use_sym(s,x,y,r,m):
 				uuy = y + sux
 	outstr+='%d %d %d %d sym%d\n' % (r,m,x,y,sid)
 
+def flag(x,y,s):
+	global outstr, llx, lly, uux, uuy
+	if y > uuy:
+		uuy = y
+	if y - 10 < lly:
+		lly = y-10
+	if x < llx:
+		llx = x
+	if x+10*len(s) > uux:
+		uux = x+10*len(s)
+	outstr += '(%s) %d %d txt\n' % (s, x, y)
+
 lines = fin.read().split('\n')
 fin.close()
 for l in lines:
@@ -260,6 +285,8 @@ for l in lines:
 				lly = int(li[2])
 			if int(li[2])+18 > uuy:
 				uuy = int(li[2])+18
+		else:
+			flag(int(li[1]),int(li[2]),li[3])
 outstr = ('%%!\n%%%%BoundingBox %d %d %d %d\n' % (llx-3,-uuy-3,uux+3,-lly+3)) + outstr
 fout.write(outstr)
 fout.close()
