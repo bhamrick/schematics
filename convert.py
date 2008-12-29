@@ -22,6 +22,11 @@ id = 0
 
 outstr = '''\
 1 -1 scale
+/mir {
+	/m 2 1 roll def
+	m 1 scale
+} def
+
 /mov {
 	/y 2 1 roll def
 	/x 2 1 roll def
@@ -41,6 +46,10 @@ outstr = '''\
 	r -1 mul rotate
 } def
 
+/unmir {
+	m 1 scale
+} def
+
 /wire {
 	newpath
 	moveto
@@ -50,6 +59,7 @@ outstr = '''\
 
 /gnd {
 	mov
+	mir
 	rot
 	newpath
 	-18 0 moveto
@@ -58,6 +68,7 @@ outstr = '''\
 	closepath
 	stroke
 	unrot
+	unmir
 	unmov
 } def
 '''
@@ -73,7 +84,7 @@ def load_sym(s):
 		return
 	print s
 	fsym = open(PREFIX+'/sym/'+s+'.asy','r')
-	symstr = '/sym%d {\n\tmov\n\trot\n' % id
+	symstr = '/sym%d {\n\tmov\n\tmir\n\trot\n' % id
 	lines = fsym.read().split('\n')
 	fsym.close()
 	for l in lines:
@@ -123,53 +134,91 @@ def load_sym(s):
 				sux = int(li[4])
 			if int(li[5]) > suy:
 				suy = int(li[5])
-	symstr+='\tunrot\n\tunmov\n} def\n'
+	symstr+='\tunrot\n\tunmir\n\tunmov\n} def\n'
 	symlist[s]=(id,slx,sly,sux,suy)
 	outstr+=symstr
 	id+=1
 
-def use_sym(s,x,y,r):
+def use_sym(s,x,y,r,m):
 	global symlist, outstr, id, llx, lly, uux, uuy
 	load_sym(s)
 	s = replace(s,'\\','/')
 	sid, slx, sly, sux, suy = symlist[s]
-	if r == 0:
-		if x + slx < llx:
-			llx = x + slx
-		if x + sux > uux:
-			uux = x + sux
-		if y + sly < lly:
-			lly = y + sly
-		if y + suy > uuy:
-			uuy = y + suy
-	if r == 90:
-		if x + sly < llx:
-			llx = x + sly
-		if x + suy > uux:
-			uux = x + suy
-		if y - sux < lly:
-			lly = y - sux
-		if y - slx > uuy:
-			uuy = y - slx
-	if r == 180:
-		if x - sux < llx:
-			llx = x - sux
-		if x - slx > uux:
-			uux = x - slx
-		if y - suy < lly:
-			lly = y - suy
-		if y - sly > uuy:
-			uuy = y - sly
-	if r == 270:
-		if x - suy < llx:
-			llx = x - suy
-		if x - sly > uux:
-			uux = x - sly
-		if y + slx < lly:
-			lly = y + slx
-		if y + sux > uuy:
-			uuy = y + sux
-	outstr+='%d %d %d sym%d\n' % (r,x,y,sid)
+	if m == 1:
+		if r == 0:
+			if x + slx < llx:
+				llx = x + slx
+			if x + sux > uux:
+				uux = x + sux
+			if y + sly < lly:
+				lly = y + sly
+			if y + suy > uuy:
+				uuy = y + suy
+		if r == 90:
+			if x + sly < llx:
+				llx = x + sly
+			if x + suy > uux:
+				uux = x + suy
+			if y - sux < lly:
+				lly = y - sux
+			if y - slx > uuy:
+				uuy = y - slx
+		if r == 180:
+			if x - sux < llx:
+				llx = x - sux
+			if x - slx > uux:
+				uux = x - slx
+			if y - suy < lly:
+				lly = y - suy
+			if y - sly > uuy:
+				uuy = y - sly
+		if r == 270:
+			if x - suy < llx:
+				llx = x - suy
+			if x - sly > uux:
+				uux = x - sly
+			if y + slx < lly:
+				lly = y + slx
+			if y + sux > uuy:
+				uuy = y + sux
+	else:
+		if r == 0:
+			if x - sux < llx:
+				llx = x - sux
+			if x - slx > uux:
+				uux = x - slx
+			if y + sly < lly:
+				lly = y + sly
+			if y + suy > uuy:
+				uuy = y + suy
+		if r == 90:
+			if x - suy < llx:
+				llx = x - suy
+			if x - sly > uux:
+				uux = x - sly
+			if y - sux < lly:
+				lly = y - sux
+			if y - slx > uuy:
+				uuy = y - slx
+		if r == 180:
+			if x + slx < llx:
+				llx = x + slx
+			if x + sux > uux:
+				uux = x + sux
+			if y - suy < lly:
+				lly = y - suy
+			if y - sly > uuy:
+				uuy = y - sly
+		if r == 270:
+			if x + sly < llx:
+				llx = x + sly
+			if x + suy > uux:
+				uux = x + suy
+			if y + slx < lly:
+				lly = y + slx
+			if y + sux > uuy:
+				uuy = y + sux
+	outstr+='%d %d %d %d sym%d\n' % (r,m,x,y,sid)
 
 lines = fin.read().split('\n')
 fin.close()
@@ -196,10 +245,13 @@ for l in lines:
 		if int(li[4]) > uuy:
 			uuy = int(li[4])
 	elif li[0]=='SYMBOL':
-		use_sym(li[1],int(li[2]),int(li[3]),int(li[4][1:]))
+		if li[4][0]=='R':
+			use_sym(li[1],int(li[2]),int(li[3]),int(li[4][1:]),1)
+		else:
+			use_sym(li[1],int(li[2]),int(li[3]),int(li[4][1:]),-1)
 	elif li[0]=='FLAG':
 		if li[3]=='0':
-			outstr+='0 %d %d gnd\n' % (int(li[1]),int(li[2]))
+			outstr+='0 1 %d %d gnd\n' % (int(li[1]),int(li[2]))
 			if int(li[1])-18 < llx:
 				llx = int(li[1])-18
 			if int(li[1])+18 > uux:
