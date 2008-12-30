@@ -19,6 +19,7 @@ cstdin, cstdout = popen2('pwd')
 PREFIX=cstdout.read()[:-1]
 
 symlist={}
+conns={}
 id = 0
 
 outstr = '''\
@@ -94,6 +95,18 @@ outstr = '''\
 	/y ty def
 	unmov
 } def
+
+/conn {
+	mov
+	newpath
+	4 4 moveto
+	4 -4 lineto
+	-4 -4 lineto
+	-4 4 lineto
+	closepath
+	fill
+	unmov
+} def
 '''
 
 def load_sym(s):
@@ -108,6 +121,7 @@ def load_sym(s):
 	print s
 	fsym = open(PREFIX+'/sym/'+s+'.asy','r')
 	attr = {}
+	pinlist = []
 	symstr = '/sym%d {\n\tmov\n\tmir\n\trot\n' % id
 	lines = fsym.read().split('\n')
 	fsym.close()
@@ -160,14 +174,16 @@ def load_sym(s):
 				suy = int(li[5])
 		elif li[0]=='WINDOW':
 			if li[1]=='0':
-				attr['InstName']=['',int(li[2]),int(li[3]),li[4]]
+				attr['InstName']=['',int(li[2]),int(li[3]),li[4],[]]
 			elif li[1]=='3':
-				attr['Value']=['',int(li[2]),int(li[3]),li[4]]
+				attr['Value']=['',int(li[2]),int(li[3]),li[4],[]]
 		elif li[0]=='SYMATTR':
 			if attr.has_key(li[1]):
 				attr[li[1]][0]=li[2]
+		elif li[0]=='PIN':
+			pinlist.append((int(li[1]),int(li[2])))
 	symstr+='\tunrot\n\tunmir\n\tunmov\n} def\n'
-	symlist[s]=(id,slx,sly,sux,suy,attr)
+	symlist[s]=(id,slx,sly,sux,suy,attr,pinlist)
 	outstr+=symstr
 	id+=1
 
@@ -175,7 +191,7 @@ def use_sym(s,x,y,r,m):
 	global symlist, outstr, id, llx, lly, uux, uuy, cattr
 	load_sym(s)
 	s = replace(s,'\\','/')
-	sid, slx, sly, sux, suy, attr = symlist[s]
+	sid, slx, sly, sux, suy, attr, pinlist = symlist[s]
 	cattr = copy.deepcopy(attr)
 	if m == 1:
 		if r == 0:
@@ -251,6 +267,26 @@ def use_sym(s,x,y,r,m):
 				lly = y + slx
 			if y + sux > uuy:
 				uuy = y + sux
+	for p in pinlist:
+		px, py = p
+		if m == 1:
+			if r == 0:
+				conns[(x+px,y+py)] = conns.get((x+px,y+py),0)+1
+			if r == 90:
+				conns[(x-py,y+px)] = conns.get((x-py,y+px),0)+1
+			if r == 180:
+				conns[(x-px,y-py)] = conns.get((x-px,y-py),0)+1
+			if r == 270:
+				conns[(x+py,y-px)] = conns.get((x+py,y-px),0)+1
+		else:
+			if r == 0:
+				conns[(x-px,y+py)] = conns.get((x-px,y+py),0)+1
+			if r == 90:
+				conns[(x+py,y+px)] = conns.get((x+py,y+px),0)+1
+			if r == 180:
+				conns[(x+px,y-py)] = conns.get((x+px,y-py),0)+1
+			if r == 270:
+				conns[(x-py,y-px)] = conns.get((x-py,y-px),0)+1
 	outstr+='%d %d %d %d sym%d\n' % (r,m,x,y,sid)
 
 def text(x,y,s):
@@ -346,9 +382,11 @@ for l in lines:
 			uux = int(li[3])
 		if int(li[4]) > uuy:
 			uuy = int(li[4])
+		conns[(int(li[1]),int(li[2]))] = conns.get((int(li[1]),int(li[2])),0)+1
+		conns[(int(li[3]),int(li[4]))] = conns.get((int(li[3]),int(li[4])),0)+1
 	elif li[0]=='SYMBOL':
 		if lsym:
-			sid,slx,sly,sux,suy,attr=symlist[lsym]
+			sid,slx,sly,sux,suy,attr,plist=symlist[lsym]
 			for key in attr:
 				symattr(lsym,key,lm,lr)
 		lsym = replace(li[1],'\\','/')
@@ -380,9 +418,12 @@ for l in lines:
 		elif li[1]=='3':
 			window(lsym,'Value',int(li[2]),int(li[3]),li[4])
 if lsym:
-	sid,slx,sly,sux,suy,attr=symlist[lsym]
+	sid,slx,sly,sux,suy,attr,plist=symlist[lsym]
 	for key in attr:
 		symattr(lsym,key,lm,lr)
+for c in conns:
+	if conns[c] > 2:
+		outstr+='%d %d conn\n' % c
 outstr = ('%%!PS-Adobe-3.0 EPSF-3.0\n%%%%BoundingBox: %d %d %d %d\n%d %d translate\n1 -1 scale\n' % (0,0,uux-llx+6,-lly+uuy+6,-llx+3,uuy+3)) + outstr
 fout.write(outstr)
 fout.close()
