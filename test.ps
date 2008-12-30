@@ -1,6 +1,11 @@
 %!
-%%BoundingBox 61 -277 259 -109
+%%BoundingBox -35 -435 419 35
 1 -1 scale
+/mir {
+	/m 2 1 roll def
+	m 1 scale
+} def
+
 /mov {
 	/y 2 1 roll def
 	/x 2 1 roll def
@@ -20,6 +25,10 @@
 	r -1 mul rotate
 } def
 
+/unmir {
+	m 1 scale
+} def
+
 /wire {
 	newpath
 	moveto
@@ -29,6 +38,7 @@
 
 /gnd {
 	mov
+	mir
 	rot
 	newpath
 	-18 0 moveto
@@ -37,13 +47,35 @@
 	closepath
 	stroke
 	unrot
+	unmir
 	unmov
 } def
-160 112 64 112 wire
-256 192 160 192 wire
-0 160 256 gnd
+
+/txt {
+	mov
+	1 -1 scale
+	newpath
+	/Courier-normal findfont
+	16 scalefont
+	setfont
+	0 0 moveto
+	show
+	1 -1 scale
+	unmov
+} def
+
+/attr {
+	x y mov
+	/tx x def
+	/ty y def
+	txt
+	/x tx def
+	/y ty def
+	unmov
+} def
 /sym0 {
 	mov
+	mir
 	rot
 	newpath
 	16 88 moveto
@@ -74,29 +106,30 @@
 	32 32 lineto
 	stroke
 	unrot
+	unmir
 	unmov
 } def
-0 144 96 sym0
-/sym1 {
-	mov
-	rot
-	newpath
-	16 36 moveto
-	16 64 lineto
-	stroke
-	newpath
-	16 28 moveto
-	16 0 lineto
-	stroke
-	newpath
-	0 28 moveto
-	32 28 lineto
-	stroke
-	newpath
-	0 36 moveto
-	32 36 lineto
-	stroke
-	unrot
-	unmov
-} def
-0 144 192 sym1
+0 1 112 -48 sym0
+(R1) 36 40 attr
+(R) 36 76 attr
+90 1 192 96 sym0
+(R2) -56 0 attr
+(R) -56 32 attr
+180 1 144 288 sym0
+(R3) -36 -76 attr
+(R) -36 -40 attr
+270 1 64 400 sym0
+(R4) 56 -32 attr
+(R) 56 0 attr
+0 -1 304 -48 sym0
+(R5) -36 40 attr
+(R) -36 76 attr
+90 -1 224 112 sym0
+(R6) 56 0 attr
+(R) 56 32 attr
+180 -1 240 288 sym0
+(R7) 36 -76 attr
+(R) 36 -40 attr
+270 -1 320 400 sym0
+(R8) -56 -32 attr
+(R) -56 0 attr

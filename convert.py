@@ -2,6 +2,7 @@
 from os import system, popen2
 from string import replace
 import sys
+import copy
 
 inname=sys.argv[1]
 outname=sys.argv[2]
@@ -84,6 +85,16 @@ outstr = '''\
 	1 -1 scale
 	unmov
 } def
+
+/attr {
+	x y mov
+	/tx x def
+	/ty y def
+	txt
+	/x tx def
+	/y ty def
+	unmov
+} def
 '''
 
 def load_sym(s):
@@ -97,6 +108,7 @@ def load_sym(s):
 		return
 	print s
 	fsym = open(PREFIX+'/sym/'+s+'.asy','r')
+	attr = {}
 	symstr = '/sym%d {\n\tmov\n\tmir\n\trot\n' % id
 	lines = fsym.read().split('\n')
 	fsym.close()
@@ -147,16 +159,25 @@ def load_sym(s):
 				sux = int(li[4])
 			if int(li[5]) > suy:
 				suy = int(li[5])
+		elif li[0]=='WINDOW':
+			if li[1]=='0':
+				attr['InstName']=['',int(li[2]),int(li[3])]
+			elif li[1]=='3':
+				attr['Value']=['',int(li[2]),int(li[3])]
+		elif li[0]=='SYMATTR':
+			if attr.has_key(li[1]):
+				attr[li[1]][0]=li[2]
 	symstr+='\tunrot\n\tunmir\n\tunmov\n} def\n'
-	symlist[s]=(id,slx,sly,sux,suy)
+	symlist[s]=(id,slx,sly,sux,suy,attr)
 	outstr+=symstr
 	id+=1
 
 def use_sym(s,x,y,r,m):
-	global symlist, outstr, id, llx, lly, uux, uuy
+	global symlist, outstr, id, llx, lly, uux, uuy, cattr
 	load_sym(s)
 	s = replace(s,'\\','/')
-	sid, slx, sly, sux, suy = symlist[s]
+	sid, slx, sly, sux, suy, attr = symlist[s]
+	cattr = copy.deepcopy(attr)
 	if m == 1:
 		if r == 0:
 			if x + slx < llx:
@@ -233,6 +254,51 @@ def use_sym(s,x,y,r,m):
 				uuy = y + sux
 	outstr+='%d %d %d %d sym%d\n' % (r,m,x,y,sid)
 
+def text(x,y,s):
+	global outstr, llx, lly, uux, uuy
+	if y > uuy:
+		uuy = y
+	if y - 10 < lly:
+		lly = y-10
+	if x < llx:
+		llx = x
+	if x+10*len(s) > uux:
+		uux = x+10*len(s)
+	outstr += '(%s) %d %d txt\n' % (s, x, y)
+
+def setattr(s,key,val):
+	global symlist, cattr
+	cattr[key][0]=val
+
+def window(s,key,x,y):
+	global symlist, cattr
+	cattr[key][1] = x
+	cattr[key][2] = y
+
+def symattr(s,key,m,r):
+	global symlist, outstr
+	val = cattr[key][0]
+	x = cattr[key][1]
+	y = cattr[key][2]
+	if m==1:
+		if r == 0:
+			outstr += '(%s) %d %d attr\n' % (val,x,y)
+		if r == 90:
+			outstr += '(%s) %d %d attr\n' % (val,-y,x)
+		if r == 180:
+			outstr += '(%s) %d %d attr\n' % (val,-x,-y)
+		if r == 270:
+			outstr += '(%s) %d %d attr\n' % (val,y,-x)
+	else:
+		if r == 0:
+			outstr += '(%s) %d %d attr\n' % (val,-x,y)
+		if r == 90:
+			outstr += '(%s) %d %d attr\n' % (val,y,x)
+		if r == 180:
+			outstr += '(%s) %d %d attr\n' % (val,x,-y)
+		if r == 270:
+			outstr += '(%s) %d %d attr\n' % (val,-y,-x)
+
 def flag(x,y,s):
 	global outstr, llx, lly, uux, uuy
 	if y > uuy:
@@ -247,6 +313,10 @@ def flag(x,y,s):
 
 lines = fin.read().split('\n')
 fin.close()
+lsym = None
+lr = None
+lm = None
+cattr = {}
 for l in lines:
 	li = l.split()
 	if len(li) == 0:
@@ -270,10 +340,18 @@ for l in lines:
 		if int(li[4]) > uuy:
 			uuy = int(li[4])
 	elif li[0]=='SYMBOL':
+		if lsym:
+			sid,slx,sly,sux,suy,attr=symlist[lsym]
+			for key in attr:
+				symattr(lsym,key,lm,lr)
+		lsym = replace(li[1],'\\','/')
 		if li[4][0]=='R':
 			use_sym(li[1],int(li[2]),int(li[3]),int(li[4][1:]),1)
+			lm = 1
 		else:
 			use_sym(li[1],int(li[2]),int(li[3]),int(li[4][1:]),-1)
+			lm = -1
+		lr = int(li[4][1:])
 	elif li[0]=='FLAG':
 		if li[3]=='0':
 			outstr+='0 1 %d %d gnd\n' % (int(li[1]),int(li[2]))
@@ -287,6 +365,17 @@ for l in lines:
 				uuy = int(li[2])+18
 		else:
 			flag(int(li[1]),int(li[2]),li[3])
+	elif li[0]=='SYMATTR':
+		setattr(lsym,li[1],li[2])
+	elif li[0]=='WINDOW':
+		if li[1]=='0':
+			window(lsym,'InstName',int(li[2]),int(li[3]))
+		elif li[1]=='3':
+			window(lsym,'Value',int(li[2]),int(li[3]))
+if lsym:
+	sid,slx,sly,sux,suy,attr=symlist[lsym]
+	for key in attr:
+		symattr(lsym,key,lm,lr)
 outstr = ('%%!\n%%%%BoundingBox %d %d %d %d\n' % (llx-3,-uuy-3,uux+3,-lly+3)) + outstr
 fout.write(outstr)
 fout.close()
