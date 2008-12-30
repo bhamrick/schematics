@@ -375,6 +375,6 @@ if lsym:
 	sid,slx,sly,sux,suy,attr=symlist[lsym]
 	for key in attr:
 		symattr(lsym,key,lm,lr)
-outstr = ('%%!\n%%%%BoundingBox %d %d %d %d\n%d %d translate\n1 -1 scale\n' % (0,0,uux-llx+6,-lly+uuy+6,-llx+3,uuy+3)) + outstr
+outstr = ('%%!PS-Adobe-3.0 EPSF-3.0\n%%%%BoundingBox: %d %d %d %d\n%d %d translate\n1 -1 scale\n' % (0,0,uux-llx+6,-lly+uuy+6,-llx+3,uuy+3)) + outstr
 fout.write(outstr)
 fout.close()
