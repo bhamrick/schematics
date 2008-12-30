@@ -160,9 +160,9 @@ def load_sym(s):
 				suy = int(li[5])
 		elif li[0]=='WINDOW':
 			if li[1]=='0':
-				attr['InstName']=['',int(li[2]),int(li[3])]
+				attr['InstName']=['',int(li[2]),int(li[3]),li[4]]
 			elif li[1]=='3':
-				attr['Value']=['',int(li[2]),int(li[3])]
+				attr['Value']=['',int(li[2]),int(li[3]),li[4]]
 		elif li[0]=='SYMATTR':
 			if attr.has_key(li[1]):
 				attr[li[1]][0]=li[2]
@@ -269,34 +269,42 @@ def setattr(s,key,val):
 	global symlist, cattr
 	cattr[key][0]=val
 
-def window(s,key,x,y):
+def window(s,key,x,y,p):
 	global symlist, cattr
 	cattr[key][1] = x
 	cattr[key][2] = y
+	cattr[key][3] = p
 
 def symattr(s,key,m,r):
 	global symlist, outstr
 	val = cattr[key][0]
 	x = cattr[key][1]
 	y = cattr[key][2]
+	p = cattr[key][3]
+	dx, dy = 0, 0
+	if p == 'VBottom':
+		dx = -5*len(val)
+	elif p == 'VTop':
+		dx = -5*len(val)
+		dy = 12
 	if m==1:
 		if r == 0:
-			outstr += '(%s) %d %d attr\n' % (val,x,y)
+			outstr += '(%s) %d %d attr\n' % (val,x+dx,y+dy)
 		if r == 90:
-			outstr += '(%s) %d %d attr\n' % (val,-y,x)
+			outstr += '(%s) %d %d attr\n' % (val,-y+dx,x+dy)
 		if r == 180:
-			outstr += '(%s) %d %d attr\n' % (val,-x,-y)
+			outstr += '(%s) %d %d attr\n' % (val,-x+dx,-y+dy)
 		if r == 270:
-			outstr += '(%s) %d %d attr\n' % (val,y,-x)
+			outstr += '(%s) %d %d attr\n' % (val,y+dx,-x+dy)
 	else:
 		if r == 0:
-			outstr += '(%s) %d %d attr\n' % (val,-x,y)
+			outstr += '(%s) %d %d attr\n' % (val,-x+dx,y+dy)
 		if r == 90:
-			outstr += '(%s) %d %d attr\n' % (val,y,x)
+			outstr += '(%s) %d %d attr\n' % (val,y+dx,x+dy)
 		if r == 180:
-			outstr += '(%s) %d %d attr\n' % (val,x,-y)
+			outstr += '(%s) %d %d attr\n' % (val,x+dx,-y+dy)
 		if r == 270:
-			outstr += '(%s) %d %d attr\n' % (val,-y,-x)
+			outstr += '(%s) %d %d attr\n' % (val,-y+dx,-x+dy)
 
 def flag(x,y,s):
 	global outstr, llx, lly, uux, uuy
@@ -304,11 +312,11 @@ def flag(x,y,s):
 		uuy = y
 	if y - 10 < lly:
 		lly = y-10
-	if x < llx:
-		llx = x
-	if x+10*len(s) > uux:
-		uux = x+10*len(s)
-	outstr += '(%s) %d %d txt\n' % (s, x, y)
+	if x-5*len(s) < llx:
+		llx = x-5*len(s)
+	if x+5*len(s) > uux:
+		uux = x+5*len(s)
+	outstr += '(%s) %d %d txt\n' % (s, x-5*len(s), y)
 
 lines = fin.read().split('\n')
 fin.close()
@@ -368,9 +376,9 @@ for l in lines:
 		setattr(lsym,li[1],li[2])
 	elif li[0]=='WINDOW':
 		if li[1]=='0':
-			window(lsym,'InstName',int(li[2]),int(li[3]))
+			window(lsym,'InstName',int(li[2]),int(li[3]),li[4])
 		elif li[1]=='3':
-			window(lsym,'Value',int(li[2]),int(li[3]))
+			window(lsym,'Value',int(li[2]),int(li[3]),li[4])
 if lsym:
 	sid,slx,sly,sux,suy,attr=symlist[lsym]
 	for key in attr:
