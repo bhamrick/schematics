@@ -22,7 +22,6 @@ symlist={}
 id = 0
 
 outstr = '''\
-1 -1 scale
 /mir {
 	/m 2 1 roll def
 	m 1 scale
@@ -77,7 +76,7 @@ outstr = '''\
 	mov
 	1 -1 scale
 	newpath
-	/Courier-normal findfont
+	/Courier findfont
 	16 scalefont
 	setfont
 	0 0 moveto
@@ -376,6 +375,6 @@ if lsym:
 	sid,slx,sly,sux,suy,attr=symlist[lsym]
 	for key in attr:
 		symattr(lsym,key,lm,lr)
-outstr = ('%%!\n%%%%BoundingBox %d %d %d %d\n' % (llx-3,-uuy-3,uux+3,-lly+3)) + outstr
+outstr = ('%%!\n%%%%BoundingBox %d %d %d %d\n%d %d translate\n1 -1 scale\n' % (0,0,uux-llx+6,-lly+uuy+6,-llx+3,uuy+3)) + outstr
 fout.write(outstr)
 fout.close()
